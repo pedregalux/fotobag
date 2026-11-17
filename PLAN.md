@@ -46,7 +46,7 @@ Arquitectura: **Astro SSR en Cloudflare Workers**, fotos en **R2** (10 GB gratis
 - Subida múltiple desde cámara o galería, con compresión en el navegador.
 - Cola con reintentos, persistida, y estado visible ("12 ✓ / 2 pendientes").
 - Galería paginada con miniaturas y visor.
-- Acceso con código de evento (no indexable).
+- Acceso por link con slug no adivinable (sin código de invitado).
 - Panel de los novios: ver todo, ocultar/eliminar, descargar.
 
 ### v1
@@ -84,7 +84,7 @@ QR en la mesa → fotos.nuestra-boda.com/e/mabel-y-belmar
 
 Detalles que definen el resultado:
 - **Dos botones grandes**, no un input genérico: los invitados mayores no entienden un `<input type="file">`.
-- **Nada de login.** Un código de 4-6 dígitos como máximo.
+- **Nada de login ni de códigos.** El link del QR es la llave.
 - **Confirmación inequívoca.** Un check por foto y un contador; si algo queda pendiente, avisar que se reintenta solo.
 - **Tolerancia a la interrupción.** Si cierran la pestaña, la cola sigue en IndexedDB y se retoma.
 
@@ -200,7 +200,7 @@ fotobag/
 │   │   ├── Uploader.svelte
 │   │   ├── Gallery.svelte
 │   │   ├── AdminPanel.svelte
-│   │   └── CodeGate.astro
+│   │   └── AdminGate.astro
 │   ├── lib/
 │   │   ├── server/{auth,db,r2,http}.ts
 │   │   └── client/{compress,queue,device,types}.ts
@@ -329,7 +329,6 @@ CREATE TABLE events (
   title         TEXT NOT NULL,
   couple_names  TEXT,
   event_date    TEXT,
-  code_hash     TEXT,                            -- sha256("<slug>:<codigo>")
   visibility    TEXT NOT NULL DEFAULT 'open',    -- open | surprise | closed
   uploads_open  INTEGER NOT NULL DEFAULT 1,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
@@ -369,7 +368,6 @@ CREATE TABLE login_attempts (ip TEXT NOT NULL, ts INTEGER NOT NULL);
 ### Endpoints
 
 ```
-POST   /api/e/:slug/session       { code } → cookie HttpOnly firmada (24 h)
 POST   /api/e/:slug/photos        FormData: display, thumb, sha256, deviceId, name
 GET    /api/e/:slug/photos        ?cursor=  → 48 fotos + URLs de miniatura
 GET    /api/e/:slug/file/:id      original con cookie; ETag y Cache-Control
@@ -421,11 +419,13 @@ return new Response(object.body, {
 
 ### Sesión
 
+La sesión de invitado se emite automáticamente al abrir el evento: no hay formulario de código. La de admin se crea con `ADMIN_CODE`.
+
 Cookie `fb_session` = `base64url(payload).base64url(HMAC-SHA256(payload))`, con `{ eid, role, exp }`, usando `crypto.subtle`. Flags: `HttpOnly; Secure` en producción, `SameSite=Lax`. La verificación usa `crypto.subtle.verify` (timing-safe) y revisa `exp` en el servidor.
 
 ### Límites anti-abuso
 
-- 5 intentos de código por IP por minuto.
+- 5 intentos por minuto para la clave de admin.
 - 300 fotos por `device_id` en total.
 - Solo `image/jpeg` de salida (el cliente siempre comprime), máximo 8 MB.
 - `device_id` = UUID en `localStorage`; si se borra, se pierde el cupo, nada más.
@@ -435,7 +435,7 @@ Cookie `fb_session` = `base64url(payload).base64url(HMAC-SHA256(payload))`, con 
 ## 8. Seguridad, privacidad y moderación
 
 - **No indexable:** `noindex` + `X-Robots-Tag`, slug aleatorio (`mabel-y-belmar-7f3k`), `robots.txt` que bloquea todo.
-- **Código de evento** además del slug.
+- **El slug es la única llave del álbum.** Si el evento es privado, conviene un slug con sufijo aleatorio (`mabel-y-belmar-7f3k`); el QR se regenera solo.
 - **EXIF/GPS fuera** desde la compresión.
 - **Bucket de originales privado**, servido solo con cookie.
 - **Miniaturas:** 480 px, URL UUID, dominio separado. Documentar el tradeoff.
@@ -537,7 +537,7 @@ A este volumen, pagar R2 es más barato que cualquier trabajo extra para "entrar
 | Límite de 100k req/día | Baja | Alto | Miniaturas por dominio de R2; Workers paid si hiciera falta |
 | Free tier suspendido | Baja | Alto | Buckets S3-compatibles; export completo al final |
 | Repo inflado por fotos | Baja | Medio | Fotos nunca en git; `.gitignore` |
-| Spam/abuso | Baja | Medio | Código, topes por dispositivo, moderación |
+| Spam/abuso | Baja | Medio | Slug no adivinable, topes por dispositivo, moderación |
 | Privacidad (menores, GPS) | Media | Alto | EXIF fuera, originales privados, borrado, aviso |
 | Invitados no participan | Media | Alto | Carteles, anuncio, muro en vivo, capitán de fotos |
 | Falta de tiempo | Media | Alto | Alcance congelado; plan B no-code listo |
@@ -577,10 +577,10 @@ Antes de escribir una línea de SaaS: hacer **un** evento real, medir las métri
 - Astro 7 reemplazó los bloques `{#if}` / `{#each}` por **expresiones JSX**:
 
   ```astro
-  {allowed ? (
-    <Uploader client:load />
+  {locked ? (
+    <p>La galería se revela después</p>
   ) : (
-    <CodeGate />
+    <Gallery client:load />
   )}
 
   {items.map((item) => <li>{item.name}</li>)}
@@ -590,3 +590,4 @@ Antes de escribir una línea de SaaS: hacer **un** evento real, medir las métri
 - `Astro.locals.runtime` fue removido: los bindings se importan con `import { env } from 'cloudflare:workers'`.
 - `astro dev` y `astro preview` corren sobre `workerd` (runtime real), no sobre Node.
 - `wrangler types` genera `worker-configuration.d.ts`; el archivo está en `.gitignore` y se regenera con `npm run check` o `npm run dev`.
+- Se eliminó el código de invitado: el link del QR es la llave. La tabla `events` ya no tiene `code_hash` (migración `0002`).

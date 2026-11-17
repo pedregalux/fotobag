@@ -9,7 +9,6 @@ export type EventRow = {
   title: string;
   couple_names: string | null;
   event_date: string | null;
-  code_hash: string | null;
   visibility: Visibility;
   uploads_open: number;
   created_at: string;

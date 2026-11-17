@@ -1,6 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
-import CodeGate from '@/components/CodeGate.astro';
+import AdminGate from '@/components/AdminGate.astro';
 import AdminPanel from '@/components/AdminPanel.svelte';
 import { requireAdmin } from '@/lib/server/auth';
 import { getEventById, getStats, listPhotos } from '@/lib/server/db';
@@ -37,7 +37,7 @@ if (session) {
   <main class="wide" style="padding-bottom:64px">
     {!session ? (
       <div class="wrap" style="padding-top:40px">
-        <CodeGate
+        <AdminGate
           endpoint="/api/admin/session"
           title="Panel de los novios"
           hint="Solo para ustedes: clave de administración."

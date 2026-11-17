@@ -115,7 +115,10 @@
     <p class="kicker">Panel</p>
     <h1>{counts.total} fotos</h1>
   </div>
-  <a class="btn btn-soft btn-small" href={`/e/${slug}/galeria`}>Ver galería</a>
+  <div class="admin-actions">
+    <a class="btn btn-soft btn-small" href="/admin/qr">QR</a>
+    <a class="btn btn-soft btn-small" href={`/e/${slug}/galeria`}>Ver galería</a>
+  </div>
 </header>
 
 <div class="stats">

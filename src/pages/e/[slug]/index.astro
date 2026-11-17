@@ -1,8 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
-import CodeGate from '@/components/CodeGate.astro';
 import Uploader from '@/components/Uploader.svelte';
-import { newSession, readSession, writeSession } from '@/lib/server/auth';
+import { ensureGuestSession } from '@/lib/server/auth';
 import { getEventBySlug } from '@/lib/server/db';
 
 const slug = Astro.params.slug;
@@ -15,14 +14,9 @@ if (!event) {
   return new Response('Evento no encontrado', { status: 404 });
 }
 
-let session = await readSession(Astro.cookies);
+// El link del QR es la llave: sesión automática, sin código.
+await ensureGuestSession(Astro.cookies, event.id);
 
-// Si el evento no tiene código, el link del QR es la llave: sesión automática.
-if (!session && !event.code_hash) {
-  session = await writeSession(Astro.cookies, newSession(event.id, 'guest'));
-}
-
-const allowed = session?.eid === event.id;
 const uploadsOpen = Boolean(event.uploads_open);
 
 const date = event.event_date
@@ -43,35 +37,25 @@ const date = event.event_date
       </p>
       <h1>Las fotos de esta noche, en un solo lugar.</h1>
       <p class="lede">
-        Escanea, elige tus fotos y listo. Sin app y sin crear cuenta: se guardan
+        Elige tus fotos y listo. Sin app y sin crear cuenta: se guardan
         solas en el álbum de los novios.
       </p>
     </div>
 
     <hr class="hero-rule" />
 
-    {allowed ? (
-      <>
-        <Uploader
-          client:load
-          slug={slug}
-          uploadsOpen={uploadsOpen}
-          galleryHref={`/e/${slug}/galeria`}
-        />
+    <Uploader
+      client:load
+      slug={slug}
+      uploadsOpen={uploadsOpen}
+      galleryHref={`/e/${slug}/galeria`}
+    />
 
-        <p class="small muted">
-          Las fotos se comprimen en tu teléfono antes de subir para que funcionen
-          con poca señal. Se borran los datos de ubicación.
-        </p>
+    <p class="small muted">
+      Las fotos se comprimen en tu teléfono antes de subir para que funcionen
+      con poca señal. Se borran los datos de ubicación.
+    </p>
 
-        <a class="btn btn-ghost" href={`/e/${slug}/galeria`}>Ver la galería</a>
-      </>
-    ) : (
-      <CodeGate
-        endpoint={`/api/e/${slug}/session`}
-        hint="El código está en la tarjeta de tu mesa."
-        autofocus
-      />
-    )}
+    <a class="btn btn-ghost" href={`/e/${slug}/galeria`}>Ver la galería</a>
   </main>
 </Base>

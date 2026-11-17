@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ params, cookies, request }) => {
   if (!slug || !id) return apiError('Foto inválida', 400);
 
   const session = await readSession(cookies);
-  if (!session) return apiError('Necesitas el código del evento', 401);
+  if (!session) return apiError('Sesión no encontrada. Abre el link del evento.', 401);
 
   const event = await getEventBySlug(slug);
   if (!event || event.id !== session.eid) return apiError('Evento no encontrado', 404);

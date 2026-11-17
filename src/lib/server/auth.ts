@@ -114,6 +114,19 @@ export async function writeSession(cookies: CookieWriter, session: Session): Pro
   return session;
 }
 
+/**
+ * El link del QR es la única llave del evento: si no hay sesión (o es de otro
+ * evento), se emite una de invitado automáticamente.
+ */
+export async function ensureGuestSession(
+  cookies: CookieReader & CookieWriter,
+  eventId: string,
+): Promise<Session> {
+  const session = await readSession(cookies);
+  if (session && session.eid === eventId) return session;
+  return writeSession(cookies, newSession(eventId, 'guest'));
+}
+
 export function clearSession(cookies: CookieWriter): void {
   cookies.delete(SESSION_COOKIE, { path: '/' });
 }
@@ -129,15 +142,6 @@ export function timingSafeEqual(a: string, b: string): boolean {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
-}
-
-export async function eventCodeMatches(
-  event: { slug: string; code_hash: string | null },
-  code: string,
-): Promise<boolean> {
-  if (!event.code_hash) return true;
-  const candidate = await sha256Hex(`${event.slug}:${code.trim()}`);
-  return timingSafeEqual(candidate, event.code_hash);
 }
 
 export async function adminCodeMatches(code: string): Promise<boolean> {

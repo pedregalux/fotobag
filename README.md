@@ -10,7 +10,7 @@
 
 Scaffold funcional. Incluye:
 
-- Landing del evento con código de acceso.
+- Landing del evento, con acceso directo por el link del QR.
 - Subida múltiple con compresión en el navegador (2560 px + miniatura 480 px).
 - HEIC de iPhone con fallback (`heic2any`).
 - Cola persistente en IndexedDB con reintentos y reanudación.
@@ -46,16 +46,12 @@ Abre la URL que imprime el servidor (por defecto `http://localhost:4321`, o el s
 > Astro 7 corre el servidor en segundo plano. Se maneja con `npx astro dev status`, `npx astro dev logs` y `npx astro dev stop`.
 
 - Evento: `/e/mabel-y-belmar`
-- Código de invitado: **1234**
 - Panel: `/admin` → clave **1234**
+- QR imprimible: `/admin/qr` (con sesión de admin)
 
-El código está en `scripts/seed.sql` y se valida como `sha256("<slug>:<codigo>")`. Para cambiarlo, genera el hash:
+El QR **no aparece en la página del invitado**: es el objeto impreso que apunta a ella. Se genera en `/admin/qr`, se imprime y se coloca en las mesas. El invitado lo escanea y entra directo al evento: no hay código de invitado.
 
-```bash
-node -e "crypto.subtle.digest('SHA-256', new TextEncoder().encode('mabel-y-belmar:5678')).then(b => console.log(Buffer.from(b).toString('hex')))"
-```
-
-y actualiza `events.code_hash`. Si el evento tiene `code_hash = NULL`, el link del QR alcanza y la sesión se crea sola.
+El acceso es solo por el link. Si quieres que no sea adivinable, cambia el slug por uno con sufijo aleatorio (`mabel-y-belmar-7f3k`); el QR se regenera solo. El panel sí sigue protegido con la clave de `ADMIN_CODE`.
 
 ### Scripts
 
@@ -75,7 +71,7 @@ y actualiza `events.code_hash`. Si el evento tiene `code_hash = NULL`, el link d
 ## Cómo funciona
 
 ```
-QR → /e/[slug] → código → cookie firmada
+QR → /e/[slug] → cookie firmada automática
    → elegir fotos → comprimir en el teléfono → cola en IndexedDB
    → POST /api/e/[slug]/photos (FormData: display + thumb)
    → Worker valida, escribe en R2 y guarda metadata en D1
@@ -109,7 +105,7 @@ Si `PUBLIC_THUMBS_BASE` está vacío, las miniaturas se sirven por `/api/thumb/[
 
 ### Base de datos
 
-`migrations/0001_init.sql`: `events`, `photos`, `reports`, `login_attempts`.
+`migrations/`: esquema inicial (`0001`) y eliminación del código de invitado (`0002`).
 
 `photos` tiene `UNIQUE (event_id, sha256)`, así que un reintento no duplica nada.
 
@@ -119,7 +115,6 @@ Si `PUBLIC_THUMBS_BASE` está vacío, las miniaturas se sirven por `/api/thumb/[
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `POST` | `/api/e/[slug]/session` | Código → cookie de invitado |
 | `GET/POST` | `/api/e/[slug]/photos` | Listar (paginado) / subir |
 | `GET` | `/api/e/[slug]/file/[id]` | Original autenticado |
 | `GET` | `/api/thumb/[id]` | Miniatura (fallback) |
@@ -127,6 +122,7 @@ Si `PUBLIC_THUMBS_BASE` está vacío, las miniaturas se sirven por `/api/thumb/[
 | `GET` | `/api/admin/photos` | Listado completo (incluye ocultas) |
 | `PATCH/DELETE` | `/api/admin/photos/[id]` | Ocultar/mostrar/eliminar |
 | `PATCH` | `/api/admin/event` | Abrir/cerrar subidas, visibilidad |
+| `GET` | `/api/admin/qr.svg` | Descarga del QR |
 
 ---
 
@@ -155,6 +151,17 @@ Después:
 2. Pon ese dominio en `vars.PUBLIC_THUMBS_BASE` de `wrangler.jsonc` y vuelve a deployar.
 3. Apunta el dominio principal al Worker (Custom Domain en la configuración del Worker).
 
+### URL del QR
+
+`/admin/qr` usa el dominio desde el que se abre la página, así que en producción no hace falta configurar nada. Para probar desde un teléfono en la red local:
+
+```bash
+# en wrangler.jsonc: "PUBLIC_SITE_URL": "http://192.168.1.50:4321"
+npx astro dev --host 0.0.0.0
+```
+
+Así el QR apunta a la IP de tu máquina y el teléfono puede abrirlo. En producción se puede dejar `PUBLIC_SITE_URL` vacío o fijarlo al dominio definitivo.
+
 ### Deploy automático desde GitHub
 
 Opción A, **Workers Builds**: en el dashboard, Workers & Pages → Create → Connect to Git. Build `npm run build`, deploy `npx wrangler deploy`.
@@ -168,7 +175,7 @@ El workflow incluido (`.github/workflows/ci.yml`) solo valida: `npm ci`, `npm ru
 ## Operación el día del evento
 
 - Antes: probar en 2-3 teléfonos reales, con WiFi y 4G. Probar HEIC, 50 fotos seguidas y cerrar/reabrir la pestaña.
-- QR: `npm run qr -- https://fotos.tu-dominio.com/e/mabel-y-belmar`. Imprimir a 4-5 cm, alto contraste, corrección H. Probar a 1,5 m.
+- QR: desde `/admin/qr` (imprimir o descargar SVG) o con `npm run qr -- https://fotos.tu-dominio.com/e/mabel-y-belmar`. Imprimir a 4-5 cm, alto contraste, corrección H. Probar a 1,5 m.
 - Durante: panel abierto en un teléfono. El botón "Cerrar subidas" corta todo al final.
 - Modo sorpresa: panel → Galería → "Sorpresa". Los invitados ven un aviso; los novios ven todo.
 - Después: `scripts/export.sh` descarga D1 + ambos buckets, compara conteos y avisa si no coinciden. **Guardar dos copias.**
@@ -181,7 +188,8 @@ El workflow incluido (`.github/workflows/ci.yml`) solo valida: `npm ci`, `npm ru
 - Originales en bucket privado; `Cache-Control: private, immutable`.
 - Miniaturas públicas por diseño (480 px, URL UUID, sin indexación). Si prefieres privacidad total: bucket privado + ruta autenticada + Workers paid.
 - EXIF/GPS eliminados en el cliente.
-- Rate limit de 5 intentos por minuto por IP, tope de 300 fotos por dispositivo.
+- Rate limit de 5 intentos por minuto para la clave de admin; tope de 300 fotos por dispositivo.
+- El slug es la única llave del álbum: si el evento es privado, usa un slug no adivinable.
 - Headers: CSP, `X-Frame-Options`, `Referrer-Policy: no-referrer`, `Permissions-Policy`.
 - `robots.txt` bloquea todo; páginas con `noindex`.
 

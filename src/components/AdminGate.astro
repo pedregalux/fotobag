@@ -8,7 +8,7 @@ interface Props {
 
 const {
   endpoint,
-  title = 'Código del evento',
+  title = 'Clave de administración',
   hint,
   autofocus = false,
 } = Astro.props;
@@ -18,13 +18,14 @@ const {
   <h2>{title}</h2>
   {hint && <p class="muted small">{hint}</p>}
   <label class="field">
-    <span>Código</span>
+    <span>Clave</span>
     <input
       name="code"
-      inputmode="numeric"
-      pattern="[0-9]*"
-      maxlength="8"
-      autocomplete="one-time-code"
+      type="text"
+      maxlength="80"
+      autocomplete="off"
+      autocapitalize="none"
+      spellcheck="false"
       required
       autofocus={autofocus}
     />

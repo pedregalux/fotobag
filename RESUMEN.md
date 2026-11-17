@@ -20,7 +20,7 @@ El invitado envía un `FormData` con la foto ya comprimida y la miniatura; el Wo
 
 **GitHub no hospeda las fotos:** repo inflado para siempre, 100 MB por archivo, LFS 1 GB y ningún control de acceso. GitHub Pages tampoco sirve: solo estático, sin API ni secretos.
 
-**Flujo del invitado:** QR → landing con dos botones grandes ("Tomar foto" / "Elegir de mi galería") → comprime → sube de a 3 con confirmación por foto → galería. Sin app, sin cuenta, con código de 4-6 dígitos.
+**Flujo del invitado:** QR → landing con dos botones grandes ("Tomar foto" / "Elegir de mi galería") → comprime → sube de a 3 con confirmación por foto → galería. Sin app, sin cuenta y sin código: el link es la llave.
 
 ## Cómo probarlo
 
@@ -32,8 +32,8 @@ npm run dev
 ```
 
 - Evento: `/e/mabel-y-belmar`
-- Código de invitado: **1234**
 - Panel: `/admin` → clave **1234**
+- QR imprimible: `/admin/qr`
 
 Detalles en `README.md`.
 

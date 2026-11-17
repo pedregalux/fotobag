@@ -30,6 +30,7 @@
   ],
   "vars": {
     "PUBLIC_THUMBS_BASE": "",
-    "PUBLIC_EVENT_SLUG": "mabel-y-belmar"
+    "PUBLIC_EVENT_SLUG": "mabel-y-belmar",
+    "PUBLIC_SITE_URL": ""
   }
 }

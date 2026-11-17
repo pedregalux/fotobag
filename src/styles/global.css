@@ -565,6 +565,78 @@ input:focus-visible,
   color: var(--err);
 }
 
+/* ---------- QR imprimible ---------- */
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.qr-page {
+  padding-bottom: 64px;
+}
+
+.qr-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 0 18px;
+}
+
+.qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.qr-card {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 44px);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.qr-card h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(30px, 6vw, 42px);
+}
+
+.qr-lead {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.qr-image {
+  width: min(300px, 70vw);
+  margin: 24px auto 16px;
+}
+
+.qr-image svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.qr-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.qr-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* ---------- Utilidades ---------- */
 
 .sr-only {
@@ -583,5 +655,38 @@ input:focus-visible,
   * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .top,
+  .no-print,
+  footer {
+    display: none !important;
+  }
+
+  .qr-page {
+    padding: 0;
+  }
+
+  .qr-card {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .qr-image {
+    width: 10cm;
+    margin: 8mm auto;
   }
 }

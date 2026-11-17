@@ -1,0 +1,52 @@
+---
+import Base from '@/layouts/Base.astro';
+import { requireAdmin } from '@/lib/server/auth';
+import { getEventById } from '@/lib/server/db';
+import { eventUrl, qrSvg } from '@/lib/server/qr';
+
+const session = await requireAdmin(Astro.cookies);
+if (!session) return Astro.redirect('/admin');
+
+const event = await getEventById(session.eid);
+if (!event) return Astro.redirect('/admin');
+
+const target = eventUrl(Astro.url.origin, event.slug);
+const svg = qrSvg(target);
+---
+
+<Base title={`QR · ${event.title}`}>
+  <main class="wrap qr-page">
+    <div class="qr-toolbar no-print">
+      <a class="btn btn-soft btn-small" href="/admin">← Volver al panel</a>
+      <div class="qr-actions">
+        <a class="btn btn-soft btn-small" href="/api/admin/qr.svg" download={`qr-${event.slug}.svg`}>
+          Descargar SVG
+        </a>
+        <button class="btn btn-primary btn-small" type="button" data-print>
+          Imprimir
+        </button>
+      </div>
+    </div>
+
+    <section class="qr-card">
+      <p class="kicker">{event.couple_names ?? 'La fiesta'}</p>
+      <h1>Sube tus fotos</h1>
+      <p class="qr-lead">Escanea el QR y comparte las fotos que hagas esta noche.</p>
+
+      <div class="qr-image" set:html={svg} />
+
+      <p class="qr-url">{target}</p>
+    </section>
+
+    <p class="small muted center no-print" style="margin-top:18px">
+      Imprime en tamaño carta o A4, recorta y coloca uno por mesa. Prueba el QR a
+      1,5 m con dos o tres teléfonos antes de mandarlo a imprimir.
+    </p>
+  </main>
+</Base>
+
+<script>
+  document.querySelector('[data-print]')?.addEventListener('click', () => {
+    window.print();
+  });
+</script>

@@ -1,8 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
-import CodeGate from '@/components/CodeGate.astro';
 import Gallery from '@/components/Gallery.svelte';
-import { readSession } from '@/lib/server/auth';
+import { ensureGuestSession } from '@/lib/server/auth';
 import { getEventBySlug, getStats, listPhotos } from '@/lib/server/db';
 import { thumbUrl } from '@/lib/server/r2';
 import type { GalleryItem } from '@/lib/client/types';
@@ -17,16 +16,15 @@ if (!event) {
   return new Response('Evento no encontrado', { status: 404 });
 }
 
-const session = await readSession(Astro.cookies);
-const allowed = session?.eid === event.id;
-const isAdmin = session?.role === 'admin';
+const session = await ensureGuestSession(Astro.cookies, event.id);
+const isAdmin = session.role === 'admin';
 const locked = event.visibility !== 'open' && !isAdmin;
 
 let items: GalleryItem[] = [];
 let next: string | null = null;
 let total = 0;
 
-if (allowed && !locked) {
+if (!locked) {
   const page = await listPhotos(event.id, { limit: 48, includeHidden: isAdmin });
   const stats = await getStats(event.id);
   total = stats.visible;
@@ -45,18 +43,7 @@ if (allowed && !locked) {
 
 <Base title={`Galería · ${event.title}`}>
   <main class="wide" style="padding-bottom:24px">
-    {!allowed ? (
-      <div class="wrap" style="padding-top:32px">
-        <CodeGate
-          endpoint={`/api/e/${slug}/session`}
-          title="La galería es privada"
-          hint="Ingresa el código que está en tu mesa."
-        />
-        <p class="small muted center" style="margin-top:16px">
-          <a href={`/e/${slug}`}>Volver a subir fotos</a>
-        </p>
-      </div>
-    ) : locked ? (
+    {locked ? (
       <div class="wrap" style="padding-top:40px">
         <div class="card center stack">
           <h2>
