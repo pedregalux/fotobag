@@ -45,14 +45,14 @@ Abre la URL que imprime el servidor (por defecto `http://localhost:4321`, o el s
 
 > Astro 7 corre el servidor en segundo plano. Se maneja con `npx astro dev status`, `npx astro dev logs` y `npx astro dev stop`.
 
-- Evento: `/e/ana-y-luis`
+- Evento: `/e/mabel-y-belmar`
 - Código de invitado: **1234**
 - Panel: `/admin` → clave **1234**
 
 El código está en `scripts/seed.sql` y se valida como `sha256("<slug>:<codigo>")`. Para cambiarlo, genera el hash:
 
 ```bash
-node -e "crypto.subtle.digest('SHA-256', new TextEncoder().encode('ana-y-luis:5678')).then(b => console.log(Buffer.from(b).toString('hex')))"
+node -e "crypto.subtle.digest('SHA-256', new TextEncoder().encode('mabel-y-belmar:5678')).then(b => console.log(Buffer.from(b).toString('hex')))"
 ```
 
 y actualiza `events.code_hash`. Si el evento tiene `code_hash = NULL`, el link del QR alcanza y la sesión se crea sola.
@@ -168,7 +168,7 @@ El workflow incluido (`.github/workflows/ci.yml`) solo valida: `npm ci`, `npm ru
 ## Operación el día del evento
 
 - Antes: probar en 2-3 teléfonos reales, con WiFi y 4G. Probar HEIC, 50 fotos seguidas y cerrar/reabrir la pestaña.
-- QR: `npm run qr -- https://fotos.tu-dominio.com/e/ana-y-luis`. Imprimir a 4-5 cm, alto contraste, corrección H. Probar a 1,5 m.
+- QR: `npm run qr -- https://fotos.tu-dominio.com/e/mabel-y-belmar`. Imprimir a 4-5 cm, alto contraste, corrección H. Probar a 1,5 m.
 - Durante: panel abierto en un teléfono. El botón "Cerrar subidas" corta todo al final.
 - Modo sorpresa: panel → Galería → "Sorpresa". Los invitados ven un aviso; los novios ven todo.
 - Después: `scripts/export.sh` descarga D1 + ambos buckets, compara conteos y avisa si no coinciden. **Guardar dos copias.**

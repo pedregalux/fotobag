@@ -2,7 +2,7 @@
 /**
  * Genera un QR imprimible en SVG.
  *
- *   npm run qr -- https://fotos.nuestra-boda.com/e/ana-y-luis
+ *   npm run qr -- https://fotos.nuestra-boda.com/e/mabel-y-belmar
  *
  * El SVG queda en qr.svg, listo para imprimir a 4-5 cm sin perder nitidez.
  * Probalo a 1,5 m con tres teléfonos distintos antes de mandarlo a imprimir.

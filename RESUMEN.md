@@ -31,7 +31,7 @@ npm run db:seed
 npm run dev
 ```
 
-- Evento: `/e/ana-y-luis`
+- Evento: `/e/mabel-y-belmar`
 - Código de invitado: **1234**
 - Panel: `/admin` → clave **1234**
 

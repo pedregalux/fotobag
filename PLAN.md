@@ -73,7 +73,7 @@ Arquitectura: **Astro SSR en Cloudflare Workers**, fotos en **R2** (10 GB gratis
 
 ### Invitado
 ```
-QR en la mesa → fotos.nuestra-boda.com/e/ana-y-luis
+QR en la mesa → fotos.nuestra-boda.com/e/mabel-y-belmar
   → "¡Gracias por venir! Sube las fotos que hagas"
   → [Tomar foto]  [Elegir de mi galería]
   → selecciona N fotos
@@ -245,7 +245,7 @@ export default defineConfig({
   ],
   "vars": {
     "PUBLIC_THUMBS_BASE": "",
-    "PUBLIC_EVENT_SLUG": "ana-y-luis"
+    "PUBLIC_EVENT_SLUG": "mabel-y-belmar"
   }
 }
 ```
@@ -434,12 +434,12 @@ Cookie `fb_session` = `base64url(payload).base64url(HMAC-SHA256(payload))`, con 
 
 ## 8. Seguridad, privacidad y moderación
 
-- **No indexable:** `noindex` + `X-Robots-Tag`, slug aleatorio (`ana-y-luis-7f3k`), `robots.txt` que bloquea todo.
+- **No indexable:** `noindex` + `X-Robots-Tag`, slug aleatorio (`mabel-y-belmar-7f3k`), `robots.txt` que bloquea todo.
 - **Código de evento** además del slug.
 - **EXIF/GPS fuera** desde la compresión.
 - **Bucket de originales privado**, servido solo con cookie.
 - **Miniaturas:** 480 px, URL UUID, dominio separado. Documentar el tradeoff.
-- **Aviso corto** al subir: "Al subir, autorizas a Ana y Luis a usar estas fotos. Puedes pedir que se borren."
+- **Aviso corto** al subir: "Al subir, autorizas a Mabel y Belmar a usar estas fotos. Puedes pedir que se borren."
 - **Borrado propio:** token en `localStorage` por dispositivo (pendiente en el scaffold; la API de admin ya cubre el borrado).
 - **Moderación:** los novios ocultan o eliminan. Modos:
   - `open`: todos ven todo (más divertido, más riesgo).
