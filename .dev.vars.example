@@ -1,0 +1,5 @@
+# Copiar a .dev.vars para desarrollo local.
+# En producción: npx wrangler secret put SESSION_SECRET
+#                    npx wrangler secret put ADMIN_CODE
+SESSION_SECRET=dev-only-change-me-please
+ADMIN_CODE=1234

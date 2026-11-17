@@ -1,0 +1,73 @@
+---
+interface Props {
+  endpoint: string;
+  title?: string;
+  hint?: string;
+  autofocus?: boolean;
+}
+
+const {
+  endpoint,
+  title = 'Código del evento',
+  hint,
+  autofocus = false,
+} = Astro.props;
+---
+
+<form class="card gate" data-endpoint={endpoint}>
+  <h2>{title}</h2>
+  {hint && <p class="muted small">{hint}</p>}
+  <label class="field">
+    <span>Código</span>
+    <input
+      name="code"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      maxlength="8"
+      autocomplete="one-time-code"
+      required
+      autofocus={autofocus}
+    />
+  </label>
+  <button class="btn btn-primary" type="submit">Entrar</button>
+  <p class="form-error" role="alert" hidden></p>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-endpoint]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const button = form.querySelector('button');
+      const error = form.querySelector<HTMLElement>('.form-error');
+      const input = form.querySelector<HTMLInputElement>('input[name="code"]');
+      const endpoint = form.dataset.endpoint;
+      if (!button || !error || !input || !endpoint) return;
+
+      button.disabled = true;
+      error.hidden = true;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ code: input.value.trim() }),
+        });
+
+        if (response.ok) {
+          location.reload();
+          return;
+        }
+
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        error.textContent = data.error ?? 'No se pudo entrar';
+        error.hidden = false;
+      } catch {
+        error.textContent = 'Sin conexión. Intenta de nuevo.';
+        error.hidden = false;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+</script>

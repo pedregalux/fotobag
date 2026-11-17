@@ -1,0 +1,69 @@
+---
+import Base from '@/layouts/Base.astro';
+import CodeGate from '@/components/CodeGate.astro';
+import AdminPanel from '@/components/AdminPanel.svelte';
+import { requireAdmin } from '@/lib/server/auth';
+import { getEventById, getStats, listPhotos } from '@/lib/server/db';
+import { thumbUrl } from '@/lib/server/r2';
+import type { GalleryItem, Stats } from '@/lib/client/types';
+
+const session = await requireAdmin(Astro.cookies);
+
+let event = null;
+let stats: Stats | null = null;
+let items: GalleryItem[] = [];
+let next: string | null = null;
+
+if (session) {
+  event = await getEventById(session.eid);
+  if (event) {
+    stats = await getStats(event.id);
+    const page = await listPhotos(event.id, { limit: 48, includeHidden: true });
+    items = page.items.map((row) => ({
+      id: row.id,
+      thumbUrl: thumbUrl(row.id, row.thumb_key),
+      width: row.width ?? 1,
+      height: row.height ?? 1,
+      name: row.uploader_name,
+      createdAt: row.created_at,
+      status: row.status,
+    }));
+    next = page.next;
+  }
+}
+---
+
+<Base title="Panel · Fotobag">
+  <main class="wide" style="padding-bottom:64px">
+    {!session ? (
+      <div class="wrap" style="padding-top:40px">
+        <CodeGate
+          endpoint="/api/admin/session"
+          title="Panel de los novios"
+          hint="Solo para ustedes: clave de administración."
+          autofocus
+        />
+      </div>
+    ) : !event || !stats ? (
+      <div class="wrap" style="padding-top:40px">
+        <div class="card stack">
+          <h2>No se encontró el evento</h2>
+          <p class="muted">
+            Revisa que exista una fila en <code>events</code> y que
+            <code>PUBLIC_EVENT_SLUG</code> apunte a ella.
+          </p>
+        </div>
+      </div>
+    ) : (
+      <AdminPanel
+        client:load
+        slug={event.slug}
+        uploadsOpen={Boolean(event.uploads_open)}
+        visibility={event.visibility}
+        initial={items}
+        next={next}
+        stats={stats}
+      />
+    )}
+  </main>
+</Base>

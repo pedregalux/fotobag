@@ -1,0 +1,100 @@
+---
+import Base from '@/layouts/Base.astro';
+import CodeGate from '@/components/CodeGate.astro';
+import Gallery from '@/components/Gallery.svelte';
+import { readSession } from '@/lib/server/auth';
+import { getEventBySlug, getStats, listPhotos } from '@/lib/server/db';
+import { thumbUrl } from '@/lib/server/r2';
+import type { GalleryItem } from '@/lib/client/types';
+
+const slug = Astro.params.slug;
+if (!slug) {
+  return new Response('Evento no encontrado', { status: 404 });
+}
+
+const event = await getEventBySlug(slug);
+if (!event) {
+  return new Response('Evento no encontrado', { status: 404 });
+}
+
+const session = await readSession(Astro.cookies);
+const allowed = session?.eid === event.id;
+const isAdmin = session?.role === 'admin';
+const locked = event.visibility !== 'open' && !isAdmin;
+
+let items: GalleryItem[] = [];
+let next: string | null = null;
+let total = 0;
+
+if (allowed && !locked) {
+  const page = await listPhotos(event.id, { limit: 48, includeHidden: isAdmin });
+  const stats = await getStats(event.id);
+  total = stats.visible;
+  items = page.items.map((row) => ({
+    id: row.id,
+    thumbUrl: thumbUrl(row.id, row.thumb_key),
+    width: row.width ?? 1,
+    height: row.height ?? 1,
+    name: row.uploader_name,
+    createdAt: row.created_at,
+    status: row.status,
+  }));
+  next = page.next;
+}
+---
+
+<Base title={`Galería · ${event.title}`}>
+  <main class="wide" style="padding-bottom:24px">
+    {!allowed ? (
+      <div class="wrap" style="padding-top:32px">
+        <CodeGate
+          endpoint={`/api/e/${slug}/session`}
+          title="La galería es privada"
+          hint="Ingresa el código que está en tu mesa."
+        />
+        <p class="small muted center" style="margin-top:16px">
+          <a href={`/e/${slug}`}>Volver a subir fotos</a>
+        </p>
+      </div>
+    ) : locked ? (
+      <div class="wrap" style="padding-top:40px">
+        <div class="card center stack">
+          <h2>
+            {event.visibility === 'closed'
+              ? 'La galería está cerrada'
+              : 'Las fotos se revelan después'}
+          </h2>
+          <p class="muted">
+            {event.visibility === 'closed'
+              ? 'Los novios decidieron cerrar la galería por ahora.'
+              : 'Los novios están guardando la sorpresa. Vuelve más tarde.'}
+          </p>
+          <a class="btn btn-soft" href={`/e/${slug}`}>Subir fotos</a>
+        </div>
+      </div>
+    ) : (
+      <>
+        <header class="gallery-head">
+          <div>
+            <p class="kicker">{event.couple_names ?? 'La fiesta'}</p>
+            <h1>La noche en fotos</h1>
+            <p class="small muted" style="margin-top:6px">
+              {total} {total === 1 ? 'foto' : 'fotos'}
+            </p>
+          </div>
+          <a class="btn btn-primary btn-small" href={`/e/${slug}`}>Subir más</a>
+        </header>
+
+        {items.length === 0 ? (
+          <div class="card center stack">
+            <h2>Todavía no hay fotos</h2>
+            <p class="muted">Sé la primera persona en subir una.</p>
+            <a class="btn btn-primary" href={`/e/${slug}`}>Subir fotos</a>
+          </div>
+        ) : (
+          <Gallery client:load slug={slug} initial={items} next={next} />
+        )}
+      </>
+    )}
+  </main>
+</Base>

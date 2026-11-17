@@ -1,0 +1,6 @@
+---
+import { env } from 'cloudflare:workers';
+
+const slug = String(env.PUBLIC_EVENT_SLUG ?? '').trim();
+return Astro.redirect(slug ? `/e/${slug}` : '/admin');
+---

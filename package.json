@@ -1,0 +1,32 @@
+{
+  "name": "fotobag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler types && astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "wrangler types && astro check",
+    "types": "wrangler types",
+    "deploy": "astro build && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply fotobag --local",
+    "db:migrate:remote": "wrangler d1 migrations apply fotobag --remote",
+    "db:seed": "wrangler d1 execute fotobag --local --file=./scripts/seed.sql",
+    "db:seed:remote": "wrangler d1 execute fotobag --remote --file=./scripts/seed.sql",
+    "qr": "node scripts/qr.mjs"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.8",
+    "@astrojs/svelte": "^9.1.6",
+    "astro": "^7.4.12",
+    "heic2any": "^0.0.4",
+    "svelte": "^5.57.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "qrcode": "^1.5.4",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.164.0"
+  }
+}
