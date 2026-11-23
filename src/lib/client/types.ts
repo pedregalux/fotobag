@@ -5,6 +5,7 @@ export type GalleryItem = {
   height: number;
   name: string | null;
   createdAt: string;
+  mime?: string;
   status?: string;
 };
 

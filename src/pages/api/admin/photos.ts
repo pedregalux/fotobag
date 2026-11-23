@@ -22,6 +22,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       height: row.height ?? 1,
       name: row.uploader_name,
       createdAt: row.created_at,
+      mime: row.mime,
       status: row.status,
     })),
     next: page.next,

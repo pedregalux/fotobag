@@ -6,7 +6,7 @@
 
 ## Lo importante
 
-**El hosting gratis es la parte fácil. Lo que decide el proyecto es la compresión en el teléfono.** Sin comprimir, 120 invitados generan ~13 GB (no entra en ningún free tier) y las subidas se cuelgan con mala señal. Comprimiendo a 2560 px en el navegador quedan ~4 GB, todo gratis y rápido.
+**El hosting gratis es la parte fácil. Lo que decide el proyecto es la compresión en el teléfono.** Sin comprimir, 120 invitados generan ~13 GB (no entra en ningún free tier) y las subidas se cuelgan con mala señal. Comprimiendo a 2048 px en WebP quedan ~3 GB, todo gratis y rápido.
 
 | Capa | Elección | Motivo |
 |---|---|---|
@@ -55,5 +55,5 @@ Y lo no negociable: al terminar, exportar todo (`wrangler d1 export` + `rclone`)
 
 1. ¿Fecha y cantidad de invitados?
 2. ¿Galería abierta durante la fiesta o **modo sorpresa**?
-3. ¿Guardar originales o alcanza con 2560 px?
+3. ¿Guardar originales o alcanza con 2048 px WebP?
 4. ¿Miniaturas públicas o privadas? (se recomienda públicas + originales privados)

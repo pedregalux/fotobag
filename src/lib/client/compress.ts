@@ -8,8 +8,14 @@ export type Compressed = {
 };
 
 export const MAX_INPUT_BYTES = 25 * 1024 * 1024;
-const DISPLAY_EDGE = 2560;
-const THUMB_EDGE = 480;
+// 2048 px es suficiente para pantalla completa y mantiene la foto liviana.
+const DISPLAY_EDGE = 2048;
+const THUMB_EDGE = 420;
+const DISPLAY_QUALITY = 0.74;
+const THUMB_QUALITY = 0.68;
+// Si el navegador no puede codificar WebP, JPEG necesita un poco más de calidad.
+const DISPLAY_JPEG_QUALITY = 0.8;
+const THUMB_JPEG_QUALITY = 0.74;
 
 type Decoded = ImageBitmap | HTMLImageElement;
 
@@ -58,10 +64,34 @@ function dimensions(source: Decoded): { width: number; height: number } {
   return { width: source.width, height: source.height };
 }
 
+async function encode(
+  canvas: OffscreenCanvas | HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  if (typeof OffscreenCanvas !== 'undefined' && canvas instanceof OffscreenCanvas) {
+    try {
+      return await canvas.convertToBlob({ type, quality });
+    } catch {
+      // Algunos navegadores lanzan error si no soportan el formato.
+      return null;
+    }
+  }
+
+  return new Promise((resolve) => {
+    (canvas as HTMLCanvasElement).toBlob(
+      (result) => resolve(result),
+      type,
+      quality,
+    );
+  });
+}
+
 async function render(
   source: Decoded,
   edge: number,
   quality: number,
+  jpegQuality: number,
 ): Promise<{ blob: Blob; width: number; height: number }> {
   const original = dimensions(source);
   const scale = Math.min(1, edge / Math.max(original.width, original.height));
@@ -88,19 +118,15 @@ async function render(
   context.drawImage(source, 0, 0, width, height);
 
   // El re-encode borra el EXIF (incluido el GPS).
-  if ('convertToBlob' in canvas) {
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality });
-    return { blob, width, height };
+  // Primero WebP; si el navegador devuelve otro formato, caemos a JPEG.
+  const webp = await encode(canvas, 'image/webp', quality);
+  if (webp && webp.type === 'image/webp') {
+    return { blob: webp, width, height };
   }
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => (result ? resolve(result) : reject(new Error('No se pudo comprimir'))),
-      'image/jpeg',
-      quality,
-    );
-  });
-  return { blob, width, height };
+  const jpeg = await encode(canvas, 'image/jpeg', jpegQuality);
+  if (!jpeg) throw new Error('No se pudo comprimir la imagen');
+  return { blob: jpeg, width, height };
 }
 
 async function sha256(blob: Blob): Promise<string> {
@@ -117,8 +143,8 @@ export async function compressImage(file: File): Promise<Compressed> {
   try {
     source = await decode(file);
     const [display, thumb] = await Promise.all([
-      render(source, DISPLAY_EDGE, 0.82),
-      render(source, THUMB_EDGE, 0.75),
+      render(source, DISPLAY_EDGE, DISPLAY_QUALITY, DISPLAY_JPEG_QUALITY),
+      render(source, THUMB_EDGE, THUMB_QUALITY, THUMB_JPEG_QUALITY),
     ]);
 
     return {

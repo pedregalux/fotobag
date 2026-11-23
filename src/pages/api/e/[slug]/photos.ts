@@ -14,6 +14,7 @@ import { deleteObjects, deleteThumbObjects, objectKeys, putPhotoObjects, thumbUr
 const MAX_DISPLAY_BYTES = 8_000_000;
 const MAX_THUMB_BYTES = 300_000;
 const MAX_PHOTOS_PER_DEVICE = 300;
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/webp']);
 
 type PhotoItem = {
   id: string;
@@ -22,6 +23,7 @@ type PhotoItem = {
   height: number;
   name: string | null;
   createdAt: string;
+  mime: string;
   status?: string;
 };
 
@@ -33,6 +35,7 @@ function toItem(row: PhotoRow): PhotoItem {
     height: row.height ?? 1,
     name: row.uploader_name,
     createdAt: row.created_at,
+    mime: row.mime,
     status: row.status,
   };
 }
@@ -86,7 +89,8 @@ export const POST: APIRoute = async ({ request, params, cookies }) => {
   }
   if (display.size > MAX_DISPLAY_BYTES) return apiError('La foto es demasiado grande', 413);
   if (thumb.size > MAX_THUMB_BYTES) return apiError('Miniatura inválida', 413);
-  if (display.type !== 'image/jpeg') return apiError('Formato no soportado', 415);
+  if (!ALLOWED_TYPES.has(display.type)) return apiError('Formato no soportado', 415);
+  if (!ALLOWED_TYPES.has(thumb.type)) return apiError('Miniatura inválida', 415);
 
   const sha256 = String(form.get('sha256') ?? '');
   if (!/^[a-f0-9]{64}$/.test(sha256)) return apiError('Hash inválido', 400);
@@ -109,7 +113,7 @@ export const POST: APIRoute = async ({ request, params, cookies }) => {
   }
 
   const id = crypto.randomUUID();
-  const keys = objectKeys(event.id, id);
+  const keys = objectKeys(event.id, id, display.type, thumb.type);
 
   await putPhotoObjects(keys, display, thumb);
 
@@ -121,6 +125,7 @@ export const POST: APIRoute = async ({ request, params, cookies }) => {
     width,
     height,
     bytes: display.size,
+    mime: display.type,
     sha256,
     deviceId,
     uploaderName,

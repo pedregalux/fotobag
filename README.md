@@ -11,7 +11,7 @@
 Scaffold funcional. Incluye:
 
 - Landing del evento, con acceso directo por el link del QR.
-- Subida múltiple con compresión en el navegador (2560 px + miniatura 480 px).
+- Subida múltiple con compresión en el navegador (2048 px WebP + miniatura 420 px).
 - HEIC de iPhone con fallback (`heic2any`).
 - Cola persistente en IndexedDB con reintentos y reanudación.
 - Galería paginada con visor y descarga individual.
@@ -83,12 +83,12 @@ QR → /e/[slug] → cookie firmada automática
 `src/lib/client/compress.ts`:
 
 1. `createImageBitmap(file, { imageOrientation: 'from-image' })` para respetar la rotación EXIF.
-2. Canvas a 2560 px (display, JPEG q0.82) y 480 px (miniatura, q0.75).
+2. Canvas a 2048 px (display, WebP q0.74) y 420 px (miniatura, WebP q0.68). Si el navegador no puede codificar WebP, usa JPEG q0.80 / q0.74.
 3. El re-encode borra el EXIF, incluido el GPS.
 4. SHA-256 del display para deduplicar (también sirve de idempotencia en D1).
 5. HEIC: `heic2any` solo si el archivo es HEIC y el navegador no lo pudo decodificar.
 
-Con esto, 120 invitados × ~70 fotos quedan en ~4 GB en vez de ~13 GB.
+Con esto, 120 invitados × ~70 fotos quedan en ~3 GB en vez de ~13 GB.
 
 ### Cola
 
@@ -98,8 +98,8 @@ Con esto, 120 invitados × ~70 fotos quedan en ~4 GB en vez de ~13 GB.
 
 | Bucket | Contenido | Acceso |
 |---|---|---|
-| `fotobag-originals` | JPEG 2560 px | Privado, servido por `/api/e/[slug]/file/[id]` con cookie |
-| `fotobag-thumbs` | JPEG 480 px | Dominio propio en R2, cacheado en el edge |
+| `fotobag-originals` | WebP 2048 px (JPEG si no hay soporte WebP) | Privado, servido por `/api/e/[slug]/file/[id]` con cookie |
+| `fotobag-thumbs` | WebP 420 px | Dominio propio en R2, cacheado en el edge |
 
 Si `PUBLIC_THUMBS_BASE` está vacío, las miniaturas se sirven por `/api/thumb/[id]` (útil en local). En producción se configura el dominio del bucket para no gastar invocaciones.
 
@@ -186,7 +186,7 @@ El workflow incluido (`.github/workflows/ci.yml`) solo valida: `npm ci`, `npm ru
 
 - Cookie `HttpOnly`, `Secure` en producción, HMAC-SHA256, 24 h.
 - Originales en bucket privado; `Cache-Control: private, immutable`.
-- Miniaturas públicas por diseño (480 px, URL UUID, sin indexación). Si prefieres privacidad total: bucket privado + ruta autenticada + Workers paid.
+- Miniaturas públicas por diseño (420 px, URL UUID, sin indexación). Si prefieres privacidad total: bucket privado + ruta autenticada + Workers paid.
 - EXIF/GPS eliminados en el cliente.
 - Rate limit de 5 intentos por minuto para la clave de admin; tope de 300 fotos por dispositivo.
 - El slug es la única llave del álbum: si el evento es privado, usa un slug no adivinable.

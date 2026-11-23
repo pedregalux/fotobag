@@ -98,7 +98,9 @@
         <button type="button" onclick={() => step(1)}>Siguiente →</button>
         <a
           href={`/api/e/${slug}/file/${selected.id}`}
-          download={`foto-${selected.id.slice(0, 8)}.jpg`}>Guardar</a
+          download={`foto-${selected.id.slice(0, 8)}.${
+            selected.mime === 'image/webp' ? 'webp' : 'jpg'
+          }`}>Guardar</a
         >
         <button type="button" onclick={close}>Cerrar</button>
       </div>

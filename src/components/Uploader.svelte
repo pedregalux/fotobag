@@ -44,8 +44,7 @@
   let cameraInput = $state<HTMLInputElement | null>(null);
   let galleryInput = $state<HTMLInputElement | null>(null);
 
-  const done = $derived(items.filter((item) => item.status === 'done').length);
-  const pending = $derived(
+  const done = $derived(items.filter((item) => item.status === 'done').length);  const pending = $derived(
     items.filter(
       (item) =>
         item.status === 'queued' ||
@@ -63,6 +62,10 @@
     if (status === 'uploading') return 'Subiendo…';
     if (status === 'done') return 'Subida';
     return 'Error';
+  }
+
+  function extension(blob: Blob): string {
+    return blob.type === 'image/webp' ? 'webp' : 'jpg';
   }
 
   function onPick(event: Event) {
@@ -173,8 +176,8 @@
       }
 
       const form = new FormData();
-      form.set('display', record.display, 'display.jpg');
-      form.set('thumb', record.thumb, 'thumb.jpg');
+      form.set('display', record.display, `display.${extension(record.display)}`);
+      form.set('thumb', record.thumb, `thumb.${extension(record.thumb)}`);
       form.set('sha256', record.id);
       form.set('deviceId', deviceId());
       form.set('name', name.trim());

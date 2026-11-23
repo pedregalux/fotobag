@@ -38,6 +38,7 @@ export type PhotoInsert = {
   width: number;
   height: number;
   bytes: number;
+  mime: string;
   sha256: string;
   deviceId: string;
   uploaderName: string | null;
@@ -68,8 +69,8 @@ export async function getPhotoByHash(eventId: string, sha256: string): Promise<P
 export async function insertPhoto(photo: PhotoInsert): Promise<PhotoRow | null> {
   const result = await env.DB.prepare(
     `INSERT OR IGNORE INTO photos
-      (id, event_id, display_key, thumb_key, width, height, bytes, sha256, device_id, uploader_name)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, event_id, display_key, thumb_key, width, height, bytes, mime, sha256, device_id, uploader_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       photo.id,
@@ -79,6 +80,7 @@ export async function insertPhoto(photo: PhotoInsert): Promise<PhotoRow | null> 
       photo.width,
       photo.height,
       photo.bytes,
+      photo.mime,
       photo.sha256,
       photo.deviceId,
       photo.uploaderName,

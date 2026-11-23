@@ -1,8 +1,20 @@
 import { env } from 'cloudflare:workers';
 
-export function objectKeys(eventId: string, photoId: string) {
+function extension(contentType: string): 'webp' | 'jpg' {
+  return contentType === 'image/webp' ? 'webp' : 'jpg';
+}
+
+export function objectKeys(
+  eventId: string,
+  photoId: string,
+  displayType = 'image/jpeg',
+  thumbType = 'image/jpeg',
+) {
   const base = `e/${eventId}/${photoId}`;
-  return { display: `${base}/d.jpg`, thumb: `${base}/t.jpg` };
+  return {
+    display: `${base}/d.${extension(displayType)}`,
+    thumb: `${base}/t.${extension(thumbType)}`,
+  };
 }
 
 export async function putPhotoObjects(
@@ -12,10 +24,13 @@ export async function putPhotoObjects(
 ): Promise<void> {
   await Promise.all([
     env.ORIGINALS.put(keys.display, display.stream(), {
-      httpMetadata: { contentType: 'image/jpeg' },
+      httpMetadata: { contentType: display.type || 'image/jpeg' },
     }),
     env.THUMBS.put(keys.thumb, thumb.stream(), {
-      httpMetadata: { contentType: 'image/jpeg' },
+      httpMetadata: {
+        contentType: thumb.type || 'image/jpeg',
+        cacheControl: 'public, max-age=31536000, immutable',
+      },
     }),
   ]);
 }

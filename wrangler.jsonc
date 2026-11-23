@@ -24,13 +24,13 @@
     {
       "binding": "DB",
       "database_name": "fotobag",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "09cf1e22-ef3d-4bab-a29b-f5760d445db6",
       "migrations_dir": "./migrations"
     }
   ],
   "vars": {
     "PUBLIC_THUMBS_BASE": "",
     "PUBLIC_EVENT_SLUG": "mabel-y-belmar",
-    "PUBLIC_SITE_URL": ""
+    "PUBLIC_SITE_URL": "https://fotobag.pedregalux.workers.dev"
   }
 }
