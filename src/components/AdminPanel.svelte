@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import type { GalleryItem, Stats } from '@/lib/client/types';
 
   type Props = {
@@ -27,6 +28,16 @@
   let busy = $state(false);
   let message = $state('');
   let loading = $state(false);
+
+  let dialog = $state<HTMLDialogElement | null>(null);
+  let target = $state<GalleryItem | null>(null);
+  let confirmText = $state('');
+  let removing = $state(false);
+  let removeError = $state('');
+
+  const canRemove = $derived(
+    target !== null && !removing && confirmText.trim().toUpperCase() === 'ELIMINAR',
+  );
 
   async function patchEvent(body: Record<string, unknown>): Promise<boolean> {
     busy = true;
@@ -77,16 +88,55 @@
     }
   }
 
-  async function remove(item: GalleryItem) {
-    if (!confirm('¿Eliminar esta foto para siempre?')) return;
-    const response = await fetch(`/api/admin/photos/${item.id}`, { method: 'DELETE' });
-    if (!response.ok) return;
-    items = items.filter((candidate) => candidate.id !== item.id);
-    counts.total = Math.max(0, counts.total - 1);
-    if ((item.status ?? 'visible') === 'hidden') {
-      counts.hidden = Math.max(0, counts.hidden - 1);
-    } else {
-      counts.visible = Math.max(0, counts.visible - 1);
+  async function askRemove(item: GalleryItem) {
+    target = item;
+    confirmText = '';
+    removeError = '';
+    removing = false;
+    await tick();
+    if (!dialog?.open) dialog?.showModal();
+  }
+
+  function cancelRemove() {
+    if (!removing) dialog?.close();
+  }
+
+  function resetRemove() {
+    target = null;
+    confirmText = '';
+    removeError = '';
+    removing = false;
+  }
+
+  async function removeConfirmed() {
+    if (!target || !canRemove) return;
+
+    const item = target;
+    removing = true;
+    removeError = '';
+
+    try {
+      const response = await fetch(`/api/admin/photos/${item.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        removeError = 'No se pudo eliminar la foto. Inténtalo de nuevo.';
+        return;
+      }
+
+      items = items.filter((candidate) => candidate.id !== item.id);
+      counts.total = Math.max(0, counts.total - 1);
+      if ((item.status ?? 'visible') === 'hidden') {
+        counts.hidden = Math.max(0, counts.hidden - 1);
+      } else {
+        counts.visible = Math.max(0, counts.visible - 1);
+      }
+      message = 'Foto eliminada definitivamente';
+      dialog?.close();
+    } catch {
+      removeError = 'Sin conexión. No se eliminó la foto.';
+    } finally {
+      removing = false;
     }
   }
 
@@ -170,7 +220,7 @@
           {:else}
             <button type="button" onclick={() => setStatus(item, 'hidden')}>Ocultar</button>
           {/if}
-          <button class="danger" type="button" onclick={() => remove(item)}>Eliminar</button>
+          <button class="danger" type="button" onclick={() => askRemove(item)}>Eliminar</button>
         </div>
       </div>
     {/each}
@@ -184,3 +234,74 @@
     </div>
   {/if}
 {/if}
+
+<dialog
+  bind:this={dialog}
+  class="confirm"
+  aria-labelledby="confirm-title"
+  onclose={resetRemove}
+  oncancel={(event: Event) => {
+    if (removing) event.preventDefault();
+  }}
+  onclick={(event: MouseEvent) => {
+    if (event.target === event.currentTarget) cancelRemove();
+  }}
+>
+  {#if target}
+    <div class="confirm-inner">
+      <p class="kicker">Eliminar foto</p>
+      <h2 id="confirm-title">¿Seguro que quieres eliminarla?</h2>
+
+      <div class="confirm-photo">
+        <img src={target.thumbUrl} alt="" />
+        <div>
+          <b>{target.name ? `Foto de ${target.name}` : 'Foto sin nombre'}</b>
+          <span class="small muted">Se borrará de la galería y de los servidores.</span>
+        </div>
+      </div>
+
+      <p class="confirm-warning" role="alert">
+        <strong>Advertencia:</strong> esta acción es definitiva. Se borrarán la foto original y su
+        miniatura, y <strong>no se puede deshacer ni recuperar</strong>. Si solo quieres que deje de
+        aparecer en la galería, usa «Ocultar» en lugar de «Eliminar».
+      </p>
+
+      <label class="field">
+        <span>
+          Pregunta de comprobación: escribe <b>ELIMINAR</b> para habilitar el borrado.
+        </span>
+        <input
+          type="text"
+          bind:value={confirmText}
+          placeholder="ELIMINAR"
+          autocomplete="off"
+          autocapitalize="characters"
+          autocorrect="off"
+          spellcheck="false"
+          disabled={removing}
+          onkeydown={(event: KeyboardEvent) => {
+            if (event.key === 'Enter' && canRemove) removeConfirmed();
+          }}
+        />
+      </label>
+
+      {#if removeError}
+        <p class="form-error" role="alert">{removeError}</p>
+      {/if}
+
+      <div class="confirm-actions">
+        <button class="btn btn-soft" type="button" onclick={cancelRemove} disabled={removing}>
+          Cancelar
+        </button>
+        <button
+          class="btn btn-danger"
+          type="button"
+          onclick={removeConfirmed}
+          disabled={!canRemove}
+        >
+          {removing ? 'Eliminando…' : 'Eliminar definitivamente'}
+        </button>
+      </div>
+    </div>
+  {/if}
+</dialog>
