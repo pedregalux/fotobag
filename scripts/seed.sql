@@ -6,7 +6,7 @@ VALUES (
   'mabel-y-belmar',
   'Mabel y Belmar',
   'Mabel & Belmar',
-  '2026-12-12',
+  '2026-11-28',
   'open',
   1
 )
