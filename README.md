@@ -164,11 +164,14 @@ Así el QR apunta a la IP de tu máquina y el teléfono puede abrirlo. En produc
 
 ### Deploy automático desde GitHub
 
-Opción A, **Workers Builds**: en el dashboard, Workers & Pages → Create → Connect to Git. Build `npm run build`, deploy `npx wrangler deploy`.
+Está conectado con **Workers Builds**: cada push a `master` compila y despliega el Worker `fotobag`.
 
-Opción B, **GitHub Actions**: agregar `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` como secretos y un workflow con `cloudflare/wrangler-action`.
+- Repositorio: `pedregalux/fotobag`
+- Rama de producción: `master`
+- Build: `pnpm run build`
+- Deploy: `npx wrangler deploy`
 
-El workflow incluido (`.github/workflows/ci.yml`) solo valida: `npm ci`, `npm run check`, `npm run build`.
+El workflow de `.github/workflows/ci.yml` sigue validando en GitHub Actions (`npm ci`, `npm run check`, `npm run build`).
 
 ---
 
